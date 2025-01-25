@@ -563,3 +563,6 @@ map = \f xs ->
         Cons x rest -> Cons (f x) (map f rest)
 
 
+add_ones :: [Natural] -> [Natural]
+add_ones = \xs -> map add_one xs
+
