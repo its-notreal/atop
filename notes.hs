@@ -371,4 +371,195 @@ data Pair x y = Pair x y
 --we are saying that it is the dual type of a product type.
 --We could say products are cosums as well but due to tradition we do not do that.
 
+--We can make pairs of pairs or eithers?
+
+--returns either a natural or (season or string)
+--the type says we will provide either a type of Natural or an Either Season String type. Its nested.
+--I think I grok it, but not well enough to explain it back to someone else, I guess.
+
+
+my_season :: Either Natural (Either Season String)
+my_season = Right (Left Fall)
+
+
+--This can also be done with pairs
+
+my_things :: Pair (Pair Natural Season) String
+my_things = MakePair (MakePair 5 Summer) "songs"
+
+f :: Pair (Pair x y) z
+    -> Pair x (Pair x y)
+f = \(MakePair (MakePair x y) z) ->
+    MakePair x (MakePair z y)
+
+--we could even combine pairs and either as well
+--Either (Pair Natural Season) (Pair Season Temperature)
+--This would be a type of either a Natural and a Season or a Season and a Temperature
+
+--moving on...
+
+three_things :: (Season, Natural, Temperature)
+three_things = (Summer, 2, Hot)
+
+add3 :: (Natural, Natural, Natural) -> Natural
+add3 = \(x, y, z) -> x + y + z
+
+--sometimes tuples are called anonymous product types
+--there is no special syntax for anonymous sum types
+--as a result we are forced to nest eithers to accomplish this task
+--in practice we don't and instead we define and name a new sum type when we need one
+
+
+--tuples have a fixed size
+--we need a variable size container for values
+--enter the linked list
+--linked lists allow grouping together of 0 or more values of the same type without needing to know how many ahead of time
+--we can construct a linked list from maybe?
+--Maybe is a coproduct (or sum type) where one of the constructors, conveys the idea of the list being empty
+--and the other one conveys that some a is in the list
+--if we expand on this concept...
+
+data Maybe a
+    = Nothing
+    | Just1 a
+    | Just2 a a
+    | Just3 a a
+    | .... etc
+
+
+--this is a recursive datatype
+--the data type lists itself by name
+--the List type can have an empty or a list a.
+data List a = Empty | OneMore a (List a)
+
+
+--empty is a value of type List a for any a of our choosing.
+--In this case we have made a a type of Natural
+--this indicates that our list will contain Natural numbers
+Empty :: List Natural
+
+--we will now use the OneMore constructor to add to our list
+OneMore 8 Empty :: List Natural
+
+--Adding element 5 to the list
+OneMore 5 (OneMore 8 Empty) :: List Natural
+
+
+--Nil means nothing
+--Cons means "constructing a pair"
+data List a = Nil | Cons a (List a)
+
+
+
+--The lists is inductively recursive. There are other types of recursion.
+--Inductive datatype definitions always start from a base case
+--0 is the base case for Natural numbers
+-- -1 is the base case for negative integers
+-- etc
+--We are going to prove that natural numbers are infinite.
+--We need a new data type, Nat, abbreviated to prevent confusion with the built in Haskell data type.
+--One of the constructors for our datatype will be Zero, akin to Nil in our previous list. It is the smallst Nat.
+
+--Succ stands for Successor
+--No matter what naural number we have, we can always obtain its successor, the natural number immediately after
+
+data Nat = Zero | Succ Nat
+
+--This works so that:
+
+zero = Zero :: Nat
+one = Succ Zero :: Nat
+two = Succ (Succ Zero) :: Nat
+three = Succ (Succ (Succ Zero)) :: Nat
+
+
+zero    = Zero          :: Nat
+one     = Succ zero     :: Nat
+two     = Succ one      :: Nat
+three   = Succ two      :: Nat
+
+
+--We're not going to convert from Nat to Natural.
+fromNat :: Nat -> Natural
+fromNat = \x ->
+    case x of
+        Zero -> 0
+        Succ y-> 1 + fromNat y
+
+
+fromNatural :: Naturall -> Nat
+fromNatural = \x ->
+    case x of
+        0 -> Zero
+        _ -> Succ (fromNatural(x-1))
+
+
+
+--creating a lambda calculus
+--initially only concerned with expressions
+--our lambda calculus tells us what kind of expressions we can use, how, and what they mean
+--lambda calculuses are one of three things
+--reference to a value
+--a lambda expression
+--application of an expression to some other expression
+
+data Expr
+    = Lam String Expr
+    | App Expr Expr
+    | Var String
+
+expr_id :: Expr
+expr_id = Lam "x" (Var "x")
+
+--We make expr_id a type of Expr
+--Lam "x" is saying that expr_id will be a function taking one parameter as input, which is called x
+
+
+expr_five :: Expr
+expr_five = App expr_id (Var "five")
+
+
+--now lets go back to linked lists, or just lists as they will be called
+--to add the element 3 to a list of Natural numbers, with a type of [Natural], the syntax is:
+3 : []
+
+--You could also do [3] but this does to acheive the goal of explicitly consing (contructing the pair) the list to grow it
+--We can add more numbers:
+1 : 2 : 3 : []
+--which is the same as
+[1, 2, 3]
+--this is an empty list, or nul:
+[]
+--this is "cons", which from earlier means "constructing a pair":
+:
+
+
+--lets increae a list of numbers
+add_ones :: [Natural] -> [Natural]
+add_ones = \[a, b ,c] -> [a + 1, b + 1, c + 1]
+
+--this does not scale for lists of varying lengths, empty lists, etc.
+--we are going to introduce mapping now.
+
+map :: (x -> y) -> [x] -> [y]
+
+--map says, given a function from a value of type x to a value of type y, and a list of said x values will return
+--a list of values of type y
+--internally map will apply thte given function to each element of the given list individually, effectively transforming each value
+--x into one type of y
+
+map :: (x->y) -> [x] -> [y]
+map = \f xs ->
+    case xs of
+        [] -> []
+        x : rest -> f x : map f rest
+
+--constructing this from our own list element
+
+map :: (x->y) -> List x -> List y
+map = \f xs ->
+    case cs of
+        Nil -> Nil
+        Cons x rest -> Cons (f x) (map f rest)
+
 
