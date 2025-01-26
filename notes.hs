@@ -566,3 +566,162 @@ map = \f xs ->
 add_ones :: [Natural] -> [Natural]
 add_ones = \xs -> map add_one xs
 
+--add_ones = \xs -> map add_one xs can be rewritten as
+-- add_ones = map add_one
+-- another example is that
+-- f is the same as \x -> f x
+-- when the input and output are the same then you do not need to add them to the lambda expression
+-- This is called pointfree style of defining a function.
+-- This is just a syntax difference. Unclear on the benefits as of now but for now the book says htat it improves
+-- readability in some situations when removing or adds clarity when writing the more verbose form.
+--"this has its roots in the concept of 'Eta-conversion', stylized as n-conversion, which says that this is possible"
+--I don't understand the implications of this sentence, it seems tautological to say that it has roots in a concept that says it is possible
+--maybe it will be elaborated on later
+--however the more verbose form is called the n-expanded form but it is apparently okay to forget this?
+
+
+--returning to add_ones = map add_one
+--the map is only "partially applied" inside of the pointfree definition of add_ones
+--this is because not all of th parameters the map was expecting have been provided yet, only part of them have
+
+
+--In Haskell partial application works because when there is a function type like:
+-- a -> b -> c -> d
+--is, in reality, a function with a type like this:
+-- a -> (b -> ( c -> d))
+-- In Haskell there is no function taking more than one parameter, all functions take only one parameter in Haskell.
+--They immediately return something right away.
+--It is just that sometimes the thing a function returns is another function, so we take a mental short cut and say
+-- a -> b -> c -> d
+-- but a -> b -> c -> d is not a function that takes three parameters as input and returns d as an out put.
+-- a -> b -> c -> d is actually a -> (b -> (c -> d)) that takes a as an input and returns
+-- a function b -> (c -> d) as an output
+--which takes b as an input and returns a function c -> d
+--the paraentheses are rarely written down, but they are always there.
+
+
+--something similar happens when a lambda expression is used to define a function
+--we write something like \a b c -> d when a function is written that takes more than one parameter as an input.
+--but we have acknowledged that taking more than one parameter is not actually a think in Haskell, so what is actually happening?
+
+--\a b c -> d is magic syntax for writing:
+\a -> (\b -> (\c -> d))
+
+--because people find this ugly.
+--And since the parentheses are unneeded as well it could also be written as:
+\a -> \b -> \c -> d
+
+
+--chapter 31 lost me a little bit with partially applying add function (with type Natural -> Natural -> Natural) using map
+--I believe the point being driven home is that the following:
+[3, 4]
+map (add 1) [2, 3]
+map add_one [2, 3]
+
+
+--all mean the same thing because map (add 1) [2, 3] would add on to each element in the list.
+-- map :: (x->y) -> List x -> List y
+
+-- I am hoping more examples will be clarifying for me. I need something meatier to sink my teeth into.
+--Learn better by doing, usually.
+
+--reminder that our type definition of map is:
+map :: (x -> y) -> [x] -> [y]
+--and we could make our expression:
+map = \_ _ -> []
+
+--in this case the input is discarded and a list [y] is returned. This passes the type checker definition.
+--but this is not what we wanted the map to do, it is just passing type checking.
+--we need more to ensure that our function works as we expect
+--we need to convey that something can be 'mapped over' without actually saying what that something is
+
+--typeclasses
+--typeclasses represent a class of types that supports some particular operations.
+--in the case of 'mapping'we will concern ourselves with the class of types in which we can find values of a particualr
+--type that can be replaced by values of a potenitally different type.
+--this is what our map funciton did, but by specifying lists with the brackets it was made more concrete, which we do not want (Why?)
+
+
+--Haskell comes with a built in function called fmap that solves this problem:
+fmap :: Functor f => (x -> y) -> f x -> f y
+--when comparing fmap to our list map:
+
+map ::               (x -> y) -> List X -> List y
+
+--they are very similar. f has replaced all instances of List and we have a new keyword, 'Functor' which is describing something about 'f'
+
+--the Functor to the far left of the => is 'constraining'
+--Functor is the typeclass in question. Functor f is saying that the f type parameter appearing to the right of the
+-- => symbol can be any type as long as it belongs to the class of types that implement the features required by the Functor typeclass.
+--Functor is just the name we give to these things that can be mapped over, such as Lists.
+
+
+--What is 'Functor'?
+--Functor is a built in typeclass in Haskell. But reproducing it for learning:
+
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
+
+--This notation is creating a new typeclass, as indicated by the class keyword.
+--f is a place holder for any type that implements what the Functor typeclass requires.
+--What is the requirement for Functor?
+-- a definition of fmap.
+
+
+--the type of fmap is
+Functor f => (a -> b) -> f a -> f b
+
+
+
+--The class of types that can be mapped over are called the Functor class
+--To be part of the Functor class, the type must implement the fmap method.
+--When a function is declared as part of the type class it is called a method instead of a function
+
+
+--Given all of the above, does a 'type f' belong to multiple class types? If we have a typeclass called:
+
+class SillyFunction f where
+    silly :: (a -> b) -> f a -> f b
+
+
+--Can 'type f' also belong to SillyFunction class type if it implements both silly and fmap? I assume so from what
+--I am reading. So types can belong to multiple classtypes that have different requirements for being part of the class type
+--Do types opt into being part of that classtype or do they just become part of it once they meet the requirements of
+--required implementations?
+--This feels like it will have large implications for the structure of programs in Haskell that I am unable to grok at this juncture
+
+
+
+
+instance Functor List where
+    fmap = \g xs ->
+        case xs of
+            Nil -> Nil
+            Cons x rest -> Cons (g x) (fmap g rest)
+
+--The connection between typeclass 'Functor' and the List type we made, we create an 'instance'
+--in this instance we have implemented fmap for the List type
+--To be more precise, according to the book, we have implemented the instance of the Functor typeclass for the List type
+--There can only be one instance of a particular typeclass for a particular type.
+--e.g. we can't have two instances of Functor for List
+
+--Ah, yes, what I wondered earlier has been stated explicilty.
+--'f type' can have many instances of different type classes.
+--So all typeclasses must be opted into by the instance keyword. Without implementing an instance of a typeclass
+--a type is not part of that typeclass.
+
+
+
+add_ones :: Functor f => f Natural -> Natural
+add_ones = fmap (add 1)
+
+instance Functor Maybe where
+    fmap = \g ya ->
+        case ya of
+            Nothing -> Nothing
+            Just a -> Just (g a)
+
+
+
+
+
