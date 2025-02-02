@@ -722,6 +722,175 @@ instance Functor Maybe where
             Just a -> Just (g a)
 
 
+--by focusing on what properties a type has and what the type is capable of is called
+--parametricity
+--parametricity says that no matter what unknown types might be in our polymorphic function
+--the behavior of the function will always be the same
+
+--add_ones adds one to all the elements of any functor
+--id whatever is given to it
+--this is true for all types we could choose to use add_ones and id with
+
+
+--all of this does not prevent us from implementing fmap incorrectly ourself
+
+instance Functor Maybe where
+    fmap = \_ _ -> Nothing
+
+--in this instance the type of fmap  method is
+-- (a -> b) -> Maybe a -> Maybe b
+
+--this broken fmap implementation follows the expectations of the type system but failed to satisyf
+--the Functor laws
+
+--the first Functor law, which is the functor identity law, says that mapping the identityfunction id over some
+--functor X should return that same x unmodified
+
+fmap id x == x
 
 
 
+--function composition
+foo :: Natural -> Natural
+foo = \x -> (x * 10) + 1
+
+--foo is the composition of multiplying by ten and adding one
+
+foo :: Natural -> Natural
+foo = compose add_one multiply_by_ten
+
+
+multiple_by_ten :: Natural -> Natural
+multiply_by_ten = \x -> x * 10
+
+add_one :: Natural -> Natural
+add_one :: \x -> x + 1
+
+--the 'type' of compose
+compose :: _ -> _ -> Natural -> Natural
+
+
+compose
+    :: (Natural -> Natural)
+    -> (Natural -> Natural)
+    -> (Natural -> Natural)
+
+--remember that right most parentheses are redundant
+--other parentheses are used to indicate an indvidual input parameter
+
+--what this means is that for compose we are inputting (Natural -> Natural) as a single input.
+--we have 2 inputs and an output and the 2 inputs are the Natural -> Natural in the ()s
+
+
+
+--we are trying to achieve
+foo = \x -> (x * 10) + 1
+
+--we are applying compose to add_one and multiply_by_ten
+--we want to do this to our input, one after another
+
+compose
+    :: (Natural -> Natural)
+    -> (Natural -> Natural)
+    -> (Natural -> Natural)
+
+compose = \g f x -> g (f x)
+
+
+--alternatively, without the unneded right most parentheses
+compose
+    :: (Natural -> Natural)
+    -> (Natural -> Natural)
+    -> Natural
+    -> Natural
+
+compose = \g f x -> g (f x)
+--if we beta reduce this function:
+
+\x -> add_one (multiply_by_ten x)
+\x -> (x * 10) + 1
+
+--but we want to get rid of the naturals in the compose arguments so that we can avoid
+--functions that meet the type requirements but do nothing
+
+compose :: (x -> x) -> (x -> x) -> x -> x
+
+
+--but this would still let us do bad things, such as
+
+compose = \_ _ a -> a
+
+--because we're using the correct types but we're returning the wrong value
+
+--so we need to go further and ensure that the application of the function is done in a specific order
+--and we're back to parametric polymorphism
+
+compose :: (b -> c) -> (a -> b) -> a -> c
+compose = \g f a -> g (f a)
+
+--since c is our output
+--we have to go back and see that b is what produces c
+--and a produces b
+--and a produces a
+--so the order has to be g (f a)
+--because we must apply them in the order we need to get c, the right most output
+--I think. I am trying to understand.
+
+--learning about the second functor law
+
+fmpap (compose g f) x == fmpag g (fmap f x)
+
+
+--laws aren't a real thing in haskell
+--i thought they might be but was skeptical how
+--turns out I was right to be skeptical
+--its just about comments
+
+
+--this function performs the addition
+--of its two input parameters
+add :: Natural -> Natural -> Natural
+add :: \x y -> x + y -- Here is another comment!
+
+-- Functors are expected to satisfy the following laws:
+--
+-- Identity law:
+--    fmap id == id
+--
+-- Composition law:
+--    compose (fmap g) (fmap f) == fmap (compose g f)
+
+
+--when saying something like
+-- 2 * 3
+--the * is a function
+-- and since it appears BETWEEN the parameters instead of before them (eg * 2 3)
+-- we call this an 'infix' function
+-- it too has a type!
+--for now we will say the type of * is Natural -> Natural -> Natural
+-- but that is obviously simplified for now
+
+--doesn't work
+* 2 3
+
+--does work
+(*) 2 3
+
+--any time an infix function is not placed BETWEEN the parameters it must be enclosed in parentheses
+--when done this way it is in a 'prefix' position
+--this term is not often used though because the default 'fixity' of a position is prefix when
+--we define a new function or constructor
+--this means we just assume functions are in the prefix condition by default unless told otherwise
+
+--we're going to implement * as a function just for exercise
+
+(*) :: Natural -> Natural -> Natural
+(*) = \x y ->
+    case y of
+        0 -> 0
+        _ -> x + x * (y - 1)
+
+    infixl 7 *
+
+--infixl means it associated to the left and has a precedence of 7
+-- + would have a precedence of 6
