@@ -271,7 +271,7 @@ string_to_temperature = \x ->
 
 data Either x y = Left x | Right y
 
---The book notes left and right are insignificant and Haskell doesn't care about the names.
+--The book notes left and Right are insignificant and Haskell doesn't care about the names.
 --Does this mean Just was invented above simply to wrap the type in? It is not a native reserve word in Haskell?
 --Can I do anything in that case, e.g. data Maybe a = Nothing | Thisisjustawordforanything a? Confusing.
 --Reading more on stackover flow it seems liek Just is a specifi keyword that must accompany Nothing, sort of an
@@ -894,3 +894,59 @@ add :: \x y -> x + y -- Here is another comment!
 
 --infixl means it associated to the left and has a precedence of 7
 -- + would have a precedence of 6
+
+
+-- : needs the value of a list element as its first parameter and a list as its second argument
+
+
+--functor type class
+class Functor f where
+    fmap :: (a -> b) -> f a _> f b
+
+--functions are functors
+--then we must be able to write a functor instance where functions somehow are that f (functor)
+
+--in Functor f, the f is a type constructor, not a type
+
+
+--this is nonsense:
+fmap :: (a -> b) -> Maybe Natural a -> Maybe Natural b
+--because f must be a type, Maybe Natural is not a type because maybe type to maybe type isn't telling us anything
+
+fmap :: (a -> b) -> Maybe a -> Maybe b
+--this is correct, as maybe is a type
+
+
+--however Either x is an acceptable type:
+fmap :: (a -> b) -> Either x a -> Either x b
+
+--this way x can be a type such as Natural, I think
+
+instance Functor (Either x) where
+    fmap = \g e ->
+        case e of
+            Left x -> Left x
+            Right a -> Right (g a)
+
+--in the above the left parameter in the () is left unchaged, we simply return the same value for it
+--But I confess I am a little lost
+
+--saying it out loud is
+--given a value of type Either x a as input, fmap modifies the a somehow, if any, possibly change its type
+--but leave the x untouched
+
+--for example
+
+fmap add_one (Left 2)
+
+--results in the same Left 2
+--but
+
+fmap add_one (Right 2)
+
+--results in Right 3
+
+--this is the definition, again, of Either, which is comprised of
+-- Left X or Right y
+data Either x y = Left x | Right y
+
